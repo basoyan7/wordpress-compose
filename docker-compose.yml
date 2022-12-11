@@ -1,0 +1,117 @@
+version: '3.9'
+
+services:
+  nginx:
+      image: nginx:latest
+      ports:
+        - 80:80
+      volumes:
+        - ./nginx:/etc/nginx/conf.d
+        - ./logs/nginx:/var/log/nginx
+        - ./wordpress:/var/www/html
+      restart: always
+      networks:
+      - wp_net
+      depends_on:
+      - wordpress
+  
+  nginx-prod:
+      image: nginx:latest
+      ports:
+        - 8080:80
+      volumes:
+        - ./nginx-prod:/etc/nginx/conf.d
+        - ./logs/nginx:/var/log/nginx
+        - ./wordpress-prod:/var/www/html
+      restart: always
+      networks:
+      - wp_net
+      depends_on:
+      - wordpress
+
+  wordpress:
+      image: wordpress:php7.3-fpm-alpine
+      ports:
+        - 9000:9000
+      volumes:
+        - ./wordpress:/var/www/html
+      environment:
+        WORDPRESS_DB_HOST: mysql
+        MYSQL_ROOT_PASSWORD: wordpress
+        WORDPRESS_DB_NAME: wordpress
+        WORDPRESS_DB_USER: wordpress
+        WORDPRESS_DB_PASSWORD: wordpress
+        WORDPRESS_TABLE_PREFIX: wp_
+      networks:
+      - wp_net
+      restart: always
+      depends_on:
+      - mysql
+
+  wordpress-prod:
+      image: wordpress:php7.3-fpm-alpine
+      ports:
+        - 9001:9000
+      volumes:
+        - ./wordpress-prod:/var/www/html
+      environment:
+        WORDPRESS_DB_HOST: mysql-prod
+        MYSQL_ROOT_PASSWORD: wordpress
+        WORDPRESS_DB_NAME: wordpress
+        WORDPRESS_DB_USER: wordpress
+        WORDPRESS_DB_PASSWORD: wordpress
+        WORDPRESS_TABLE_PREFIX: wp_
+      networks:
+      - wp_net
+      restart: always
+      depends_on:
+      - mysql-prod
+
+  mysql:
+      image: mariadb
+      ports:
+        - 3306:3306
+      volumes:
+        - ./db-data:/var/lib/mysql
+      environment:
+        MYSQL_ROOT_PASSWORD: wordpress
+        MYSQL_DATABASE: wordpress
+        MYSQL_USER: wordpress
+        MYSQL_PASSWORD: wordpress
+      restart: always
+      networks:
+      - wp_net
+
+  mysql-prod:
+      image: mariadb
+      ports:
+        - 3307:3306
+      volumes:
+        - ./db-data-prod:/var/lib/mysql
+      environment:
+        MYSQL_ROOT_PASSWORD: wordpress
+        MYSQL_DATABASE: wordpress
+        MYSQL_USER: wordpress
+        MYSQL_PASSWORD: wordpress
+      restart: always
+      networks:
+      - wp_net
+  
+  node-red:
+    image: nodered/node-red:latest
+    environment:
+      - TZ=Europe/Amsterdam
+    ports:
+      - "1880:1880"
+    networks:
+      - wp_net
+    volumes:
+      - node-red-data:/data
+
+volumes:
+  node-red-data:
+
+
+networks:
+  wp_net:
+    driver: bridge
